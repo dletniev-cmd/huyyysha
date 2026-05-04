@@ -16,4 +16,8 @@ class AppColors {
   static const text = Color(0xFFF2F2F4);
   static const textDim = Color(0xFF9A9A9F);
   static const textMuted = Color(0xFF6A6A70);
+
+  // glass — как в HTML: rgba(28,29,40,0.55) + блюр
+  static const glassFill = Color(0x8C1C1D28); // ~55%
+  static const glassBorder = Color(0x14FFFFFF); // ~8%
 }

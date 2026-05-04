@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'glass.dart';
+import 'svg_icon.dart';
 
-/// Капсула FAB слева снизу. Закрытое состояние — круг 48×48.
-/// При тапе раскрывается вправо в капсулу с 5 иконками типов нод.
+/// FAB-капсулка: только две кнопки — заметка и сообщение, плюс кнопка-toggle.
 class FabMenu extends StatefulWidget {
-  const FabMenu({super.key});
+  final void Function(String type)? onAdd;
+  const FabMenu({super.key, this.onAdd});
 
   @override
   State<FabMenu> createState() => _FabMenuState();
@@ -12,158 +14,169 @@ class FabMenu extends StatefulWidget {
 
 class _FabMenuState extends State<FabMenu> with SingleTickerProviderStateMixin {
   bool _open = false;
+  late final AnimationController _ctl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 280),
+  );
 
-  static const _items = <_FabItem>[
-    _FabItem(Icons.play_arrow_rounded, AppColors.accent3, 'start'),
-    _FabItem(Icons.chat_bubble_rounded, AppColors.accent, 'message'),
-    _FabItem(Icons.input_rounded, AppColors.accent3, 'input'),
-    _FabItem(Icons.timer_rounded, AppColors.accent4, 'timer'),
-    _FabItem(Icons.sticky_note_2_rounded, AppColors.accent5, 'comment'),
-  ];
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
 
-  void _toggle() => setState(() => _open = !_open);
+  void _toggle() {
+    setState(() => _open = !_open);
+    if (_open) {
+      _ctl.forward();
+    } else {
+      _ctl.reverse();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final panelW = 48.0 + _items.length * 42.0 + 12;
-    return Padding(
-      padding: const EdgeInsets.only(left: 12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 260),
-        curve: Curves.easeOutCubic,
-        width: _open ? panelW : 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: const Color(0xF0161616),
-          borderRadius: BorderRadius.circular(9999),
-          boxShadow: const [
-            BoxShadow(color: Color(0x73000000), blurRadius: 24, offset: Offset(0, 8)),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Кнопки появляются после открытия
-            Positioned(
-              left: 48,
-              top: 4,
-              bottom: 4,
-              right: 8,
-              child: AnimatedOpacity(
-                opacity: _open ? 1 : 0,
-                duration: Duration(milliseconds: _open ? 180 : 100),
-                curve: Curves.easeOut,
-                child: ClipRect(
-                  child: Row(
-                    children: [
-                      for (int i = 0; i < _items.length; i++)
-                        _AnimatedItem(
-                          delay: Duration(milliseconds: _open ? 40 + i * 40 : 0),
-                          visible: _open,
-                          child: _AddNodeBtn(item: _items[i], onTap: () {}),
+    final bottom = MediaQuery.of(context).padding.bottom;
+    return Positioned(
+      left: 16,
+      right: 16,
+      bottom: 16 + bottom,
+      child: Align(
+        alignment: Alignment.bottomLeft,
+        child: AnimatedSize(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          child: Glass(
+            borderRadius: BorderRadius.circular(34),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ToggleButton(open: _open, onTap: _toggle),
+                ClipRect(
+                  child: AnimatedBuilder(
+                    animation: _ctl,
+                    builder: (_, __) {
+                      return Align(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: _ctl.value,
+                        child: Opacity(
+                          opacity: _ctl.value,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(width: 6),
+                              _ItemButton(
+                                asset: 'chat',
+                                color: AppColors.accent,
+                                delay: 0,
+                                progress: _ctl.value,
+                                onTap: () { widget.onAdd?.call('message'); _toggle(); },
+                              ),
+                              const SizedBox(width: 8),
+                              _ItemButton(
+                                asset: 'note',
+                                color: AppColors.accent5,
+                                delay: 0.15,
+                                progress: _ctl.value,
+                                onTap: () { widget.onAdd?.call('comment'); _toggle(); },
+                              ),
+                            ],
+                          ),
                         ),
-                    ],
+                      );
+                    },
                   ),
                 ),
-              ),
+              ],
             ),
-            // Плюс/крестик
-            Positioned(
-              left: 0,
-              top: 0,
-              child: GestureDetector(
-                onTap: _toggle,
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Center(
-                    child: AnimatedRotation(
-                      turns: _open ? 0.125 : 0,
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOutCubic,
-                      child: const Icon(Icons.add_rounded,
-                          color: AppColors.text, size: 26),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _FabItem {
-  final IconData icon;
-  final Color color;
-  final String type;
-  const _FabItem(this.icon, this.color, this.type);
-}
-
-class _AddNodeBtn extends StatefulWidget {
-  final _FabItem item;
+class _ToggleButton extends StatelessWidget {
+  final bool open;
   final VoidCallback onTap;
-  const _AddNodeBtn({required this.item, required this.onTap});
-  @override
-  State<_AddNodeBtn> createState() => _AddNodeBtnState();
-}
+  const _ToggleButton({required this.open, required this.onTap});
 
-class _AddNodeBtnState extends State<_AddNodeBtn> {
-  bool _pressed = false;
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _pressed ? 0.88 : 1,
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        child: Container(
-          width: 40,
-          height: 40,
-          margin: const EdgeInsets.symmetric(horizontal: 1),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: _pressed ? const Color(0x1AFFFFFF) : Colors.transparent,
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: const BoxDecoration(
+          color: Color(0x33000000),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: AnimatedRotation(
+            turns: open ? 0.125 : 0, // 45°
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOutBack,
+            child: SvgIcon(open ? 'close' : 'plus', size: 26, color: AppColors.text),
           ),
-          child: Icon(widget.item.icon, color: widget.item.color, size: 20),
         ),
       ),
     );
   }
 }
 
-class _AnimatedItem extends StatelessWidget {
-  final Duration delay;
-  final bool visible;
-  final Widget child;
-  const _AnimatedItem({
+class _ItemButton extends StatefulWidget {
+  final String asset;
+  final Color color;
+  final double delay;
+  final double progress;
+  final VoidCallback onTap;
+  const _ItemButton({
+    required this.asset,
+    required this.color,
     required this.delay,
-    required this.visible,
-    required this.child,
+    required this.progress,
+    required this.onTap,
   });
 
   @override
+  State<_ItemButton> createState() => _ItemButtonState();
+}
+
+class _ItemButtonState extends State<_ItemButton> {
+  bool _down = false;
+  @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      key: ValueKey(visible),
-      tween: Tween(begin: visible ? 0.0 : 1.0, end: visible ? 1.0 : 0.0),
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-      builder: (context, t, c) {
-        return Opacity(
-          opacity: t,
-          child: Transform.translate(
-            offset: Offset(0, (1 - t) * 2),
-            child: Transform.scale(scale: 0.6 + 0.4 * t, child: c),
+    final t = ((widget.progress - widget.delay) / (1 - widget.delay)).clamp(0.0, 1.0);
+    return Opacity(
+      opacity: t,
+      child: Transform.translate(
+        offset: Offset(20 * (1 - t), 0),
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _down = true),
+          onTapUp: (_) => setState(() => _down = false),
+          onTapCancel: () => setState(() => _down = false),
+          onTap: widget.onTap,
+          child: AnimatedScale(
+            scale: _down ? 0.9 : 1.0,
+            duration: const Duration(milliseconds: 120),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: widget.color.withOpacity(0.18),
+                shape: BoxShape.circle,
+                border: Border.all(color: widget.color.withOpacity(0.45), width: 1),
+              ),
+              child: Center(
+                child: SvgIcon(widget.asset, size: 22, color: widget.color),
+              ),
+            ),
           ),
-        );
-      },
-      child: child,
+        ),
+      ),
     );
   }
 }

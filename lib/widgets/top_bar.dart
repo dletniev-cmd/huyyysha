@@ -1,29 +1,36 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'glass.dart';
+import 'svg_icon.dart';
 
 class TopBar extends StatelessWidget {
-  const TopBar({super.key});
+  final VoidCallback? onFit;
+  final VoidCallback? onExport;
+  const TopBar({super.key, this.onFit, this.onExport});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4),
-          child: _Logo(),
-        ),
-        const Spacer(),
-        _IconBtn(icon: Icons.crop_free_rounded, onTap: () {}),
-        const SizedBox(width: 10),
-        _IconBtn(icon: Icons.ios_share_rounded, onTap: () {}),
-      ],
+    final top = MediaQuery.of(context).padding.top;
+    return Positioned(
+      top: top + 10,
+      left: 12,
+      right: 12,
+      height: 48,
+      child: Row(
+        children: [
+          const _Logo(),
+          const Spacer(),
+          _GlassButton(asset: 'fullscreen', onTap: onFit),
+          const SizedBox(width: 10),
+          _GlassButton(asset: 'upload', onTap: onExport),
+        ],
+      ),
     );
   }
 }
 
 class _Logo extends StatelessWidget {
   const _Logo();
-
   @override
   Widget build(BuildContext context) {
     return RichText(
@@ -32,64 +39,48 @@ class _Logo extends StatelessWidget {
           fontSize: 15,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.5,
-          shadows: [
-            Shadow(color: Color(0x8C000000), blurRadius: 14, offset: Offset(0, 1)),
-          ],
+          shadows: [Shadow(blurRadius: 14, color: Color(0x8C000000))],
         ),
         children: [
           TextSpan(text: 'Bot Flow ', style: TextStyle(color: AppColors.accent)),
-          TextSpan(
-            text: 'Builder',
-            style: TextStyle(color: AppColors.textDim, fontWeight: FontWeight.w500),
-          ),
+          TextSpan(text: 'Builder', style: TextStyle(color: AppColors.textDim, fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 }
 
-class _IconBtn extends StatefulWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _IconBtn({required this.icon, required this.onTap});
-
+class _GlassButton extends StatefulWidget {
+  final String asset;
+  final VoidCallback? onTap;
+  const _GlassButton({required this.asset, this.onTap});
   @override
-  State<_IconBtn> createState() => _IconBtnState();
+  State<_GlassButton> createState() => _GlassButtonState();
 }
 
-class _IconBtnState extends State<_IconBtn> {
-  bool _pressed = false;
-
+class _GlassButtonState extends State<_GlassButton> {
+  bool _down = false;
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTapUp: (_) => setState(() => _pressed = false),
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapUp: (_) => setState(() => _down = false),
+      onTapCancel: () => setState(() => _down = false),
       onTap: widget.onTap,
       child: AnimatedScale(
-        scale: _pressed ? 0.94 : 1,
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: _pressed
-                ? const Color(0xEB414141)
-                : const Color(0xD1282828),
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0x1AFFFFFF)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x4D000000),
-                blurRadius: 18,
-                offset: Offset(0, 6),
-              ),
-            ],
+        scale: _down ? 0.92 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Glass(
+            borderRadius: BorderRadius.circular(22),
+            child: Center(
+              child: SvgIcon(widget.asset, size: 22, color: AppColors.text),
+            ),
           ),
-          child: Icon(widget.icon, color: AppColors.text, size: 20),
         ),
       ),
     );
