@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'screens/canvas_screen.dart';
-import 'theme/app_colors.dart';
+import 'utils/colors.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +26,6 @@ class BotFlowApp extends StatelessWidget {
         scaffoldBackgroundColor: AppColors.bg,
         brightness: Brightness.dark,
         fontFamily: 'SF Pro Display',
-        textTheme: const TextTheme().apply(bodyColor: AppColors.text),
       ),
       home: const CanvasScreen(),
     );

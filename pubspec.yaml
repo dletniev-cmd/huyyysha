@@ -1,19 +1,17 @@
 name: bot_flow_builder
-description: Bot Flow Builder mobile
-publish_to: "none"
+description: Bot Flow Builder
+publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.4.0 <4.0.0"
+  sdk: '>=3.4.0 <4.0.0'
   flutter: ">=3.24.0"
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_svg: ^2.0.10+1
-
-dev_dependencies:
-  flutter_lints: ^4.0.0
+  uuid: ^4.4.0
 
 flutter:
   uses-material-design: true

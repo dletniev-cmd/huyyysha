@@ -1,179 +1,164 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import '../models/node_model.dart';
+import '../utils/colors.dart';
 import 'glass.dart';
-import 'svg_icon.dart';
 
-/// FAB-капсулка: только две кнопки — заметка и сообщение, плюс кнопка-toggle.
 class FabMenu extends StatefulWidget {
-  final void Function(String type)? onAdd;
-  const FabMenu({super.key, this.onAdd});
-
+  final ValueChanged<NodeType> onAdd;
+  const FabMenu({super.key, required this.onAdd});
   @override
   State<FabMenu> createState() => _FabMenuState();
 }
 
-class _FabMenuState extends State<FabMenu> with SingleTickerProviderStateMixin {
+class _FabMenuState extends State<FabMenu>
+    with SingleTickerProviderStateMixin {
   bool _open = false;
-  late final AnimationController _ctl = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 280),
-  );
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 280));
+  }
 
   @override
   void dispose() {
-    _ctl.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
   void _toggle() {
     setState(() => _open = !_open);
     if (_open) {
-      _ctl.forward();
+      _ctrl.forward();
     } else {
-      _ctl.reverse();
+      _ctrl.reverse();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).padding.bottom;
-    return Positioned(
-      left: 16,
-      right: 16,
-      bottom: 16 + bottom,
-      child: Align(
-        alignment: Alignment.bottomLeft,
-        child: AnimatedSize(
-          duration: const Duration(milliseconds: 260),
-          curve: Curves.easeOutCubic,
-          child: Glass(
-            borderRadius: BorderRadius.circular(34),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _ToggleButton(open: _open, onTap: _toggle),
-                ClipRect(
-                  child: AnimatedBuilder(
-                    animation: _ctl,
-                    builder: (_, __) {
-                      return Align(
-                        alignment: Alignment.centerLeft,
-                        widthFactor: _ctl.value,
-                        child: Opacity(
-                          opacity: _ctl.value,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(width: 6),
-                              _ItemButton(
-                                asset: 'chat',
-                                color: AppColors.accent,
-                                delay: 0,
-                                progress: _ctl.value,
-                                onTap: () { widget.onAdd?.call('message'); _toggle(); },
-                              ),
-                              const SizedBox(width: 8),
-                              _ItemButton(
-                                asset: 'note',
-                                color: AppColors.accent5,
-                                delay: 0.15,
-                                progress: _ctl.value,
-                                onTap: () { widget.onAdd?.call('comment'); _toggle(); },
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+    return Stack(
+      alignment: Alignment.bottomRight,
+      children: [
+        if (_open)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: _toggle,
             ),
           ),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            _itemAnim(0, _option('Сообщение', AppColors.nodeMessage,
+                'assets/icons/chat-round-bold.svg', () {
+              widget.onAdd(NodeType.message);
+              _toggle();
+            })),
+            const SizedBox(height: 12),
+            _itemAnim(1, _option('Заметка', AppColors.accent5,
+                'assets/icons/notes-bold.svg', () {
+              widget.onAdd(NodeType.note);
+              _toggle();
+            })),
+            const SizedBox(height: 16),
+            _fab(),
+          ],
         ),
-      ),
+      ],
     );
   }
-}
 
-class _ToggleButton extends StatelessWidget {
-  final bool open;
-  final VoidCallback onTap;
-  const _ToggleButton({required this.open, required this.onTap});
+  Widget _itemAnim(int idx, Widget child) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final t = Curves.easeOutBack.transform(
+            (_ctrl.value - idx * 0.08).clamp(0.0, 1.0));
+        return Opacity(
+          opacity: t.clamp(0.0, 1.0),
+          child: Transform.translate(
+            offset: Offset(0, (1 - t) * 16),
+            child: Transform.scale(
+              scale: 0.9 + 0.1 * t,
+              alignment: Alignment.centerRight,
+              child: IgnorePointer(ignoring: !_open, child: child),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _option(
+      String label, Color color, String icon, VoidCallback onTap) {
     return GestureDetector(
-      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: const BoxDecoration(
-          color: Color(0x33000000),
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: AnimatedRotation(
-            turns: open ? 0.125 : 0, // 45°
-            duration: const Duration(milliseconds: 240),
-            curve: Curves.easeOutBack,
-            child: SvgIcon(open ? 'close' : 'plus', size: 26, color: AppColors.text),
+      child: Glass(
+        borderRadius: BorderRadius.circular(28),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(label,
+                  style: const TextStyle(
+                      color: AppColors.text,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600)),
+              const SizedBox(width: 12),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.20),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: SvgPicture.asset(icon,
+                    width: 18,
+                    height: 18,
+                    colorFilter: ColorFilter.mode(color, BlendMode.srcIn)),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
-}
 
-class _ItemButton extends StatefulWidget {
-  final String asset;
-  final Color color;
-  final double delay;
-  final double progress;
-  final VoidCallback onTap;
-  const _ItemButton({
-    required this.asset,
-    required this.color,
-    required this.delay,
-    required this.progress,
-    required this.onTap,
-  });
-
-  @override
-  State<_ItemButton> createState() => _ItemButtonState();
-}
-
-class _ItemButtonState extends State<_ItemButton> {
-  bool _down = false;
-  @override
-  Widget build(BuildContext context) {
-    final t = ((widget.progress - widget.delay) / (1 - widget.delay)).clamp(0.0, 1.0);
-    return Opacity(
-      opacity: t,
-      child: Transform.translate(
-        offset: Offset(20 * (1 - t), 0),
-        child: GestureDetector(
-          onTapDown: (_) => setState(() => _down = true),
-          onTapUp: (_) => setState(() => _down = false),
-          onTapCancel: () => setState(() => _down = false),
-          onTap: widget.onTap,
-          child: AnimatedScale(
-            scale: _down ? 0.9 : 1.0,
-            duration: const Duration(milliseconds: 120),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: widget.color.withOpacity(0.18),
-                shape: BoxShape.circle,
-                border: Border.all(color: widget.color.withOpacity(0.45), width: 1),
-              ),
-              child: Center(
-                child: SvgIcon(widget.asset, size: 22, color: widget.color),
-              ),
-            ),
+  Widget _fab() {
+    return GestureDetector(
+      onTap: _toggle,
+      child: AnimatedRotation(
+        turns: _open ? 0.125 : 0,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutBack,
+        child: Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: AppColors.accent,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accent.withOpacity(0.4),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              )
+            ],
+          ),
+          alignment: Alignment.center,
+          child: SvgPicture.asset(
+            'assets/icons/add-square-bold.svg',
+            width: 28,
+            height: 28,
+            colorFilter:
+                const ColorFilter.mode(Colors.white, BlendMode.srcIn),
           ),
         ),
       ),

@@ -1,20 +1,14 @@
-# Flutter
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
-.pub-cache/
-.pub/
 build/
 .idea/
-*.iml
 .vscode/
-
-# Generated platform folders are recreated by CI
-# (uncomment if you want to keep them out of the repo)
-# /android/
-# /ios/
-
-# OS
-.DS_Store
-Thumbs.db
+*.iml
+android/
+ios/
+linux/
+macos/
+windows/
+web/

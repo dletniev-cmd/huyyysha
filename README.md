@@ -1,14 +1,14 @@
-# Bot Flow Builder (Flutter)
+# Bot Flow Builder
 
-## Сборка APK через GitHub Actions
-1. Создать пустой репозиторий на GitHub.
-2. Залить содержимое этого архива в корень.
-3. Перейти в Actions → Build APK → дождаться завершения.
-4. Скачать артефакт `app-release-apk`.
+Flutter (Android) port of the Bot Flow Builder web prototype.
 
-## Что в этой версии
-- Прозрачный statusbar (edge-to-edge).
-- Бесконечный canvas с сеткой, pan + pinch zoom.
-- Топ-бар с логотипом и двумя стеклянными iOS-кнопками (fullscreen, upload).
-- FAB-капсула с **двумя** кнопками: сообщение и заметка. Эффект iOS-стекла (BackdropFilter blur 20).
-- Иконки — Solar (вшиты как SVG в `assets/icons/`).
+## Build
+GitHub Actions workflow `.github/workflows/build-apk.yml` builds a release APK
+on every push and uploads it as the `app-release-apk` artifact.
+
+## Local
+```
+flutter create --platforms=android --org com.botflow .
+flutter pub get
+flutter build apk --release
+```
